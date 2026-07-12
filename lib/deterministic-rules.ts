@@ -70,14 +70,5 @@ export function evaluateDeterministicRules(input: JobAnalysisInput): Determinist
     add("专业限制", majorSource, type, input.major, status, reason);
   } else add("专业限制", majorSource, "未明确", input.major, "未明确", "JD 未发现明确硬性专业限制。");
 
-  const pythonSource = sourceFor(jd, /Python/);
-  if (pythonSource !== "JD 未发现对应原文") {
-    const type = classify(pythonSource);
-    const python = input.skills.find(skill => skill.name.toLowerCase() === "python");
-    const met = Boolean(python);
-    const status: GateStatus = type === "企业偏好" ? met ? "满足偏好" : "未满足偏好，但不构成硬门槛" : type === "普通加分项" ? met ? "已具备加分项" : "暂未具备加分项" : met ? "达到要求" : "存在能力差距";
-    add("Python", pythonSource, type, python ? `已选择，${python.level} 级` : "未选择", status, type === "企业偏好" && !met ? "Python 经验是企业偏好，不构成硬门槛。" : "根据用户技能选择与等级判断。" );
-  }
-
   return { gateChecks, notes };
 }
