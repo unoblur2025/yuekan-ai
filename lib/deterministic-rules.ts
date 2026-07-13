@@ -60,15 +60,31 @@ export function evaluateDeterministicRules(input: JobAnalysisInput): Determinist
     add("实习周期", durationSource, type, input.internshipDuration, status, met ? `用户可满足连续实习 ${requiredMonths} 个月。` : `用户最长实习 ${input.internshipDuration}，但岗位要求连续实习 ${requiredMonths} 个月以上。`);
   } else add("实习周期", durationSource, "未明确", input.internshipDuration, "未明确", "JD 未发现明确的连续实习周期。");
 
-  const majorSource = sourceFor(jd, /计算机|人工智能|软件|数据|电子信息|专业/);
+  const majorFieldPattern = /计算机|软件(?=.{0,20}(?:专业|背景))|人工智能|数据(?=.{0,20}(?:专业|背景))|电子信息|设计类?|商科/;
+  const majorSemanticsPattern = /相关专业|专业背景|(?:计算机|软件|人工智能|数据|电子信息|设计类?|商科).{0,20}(?:专业|背景)/;
+  const majorRequirementPattern = /要求|限|仅限|只招|优先|倾向|需|应|本科及以上|硕士及以上|博士及以上|相关专业|专业背景|等背景|背景或/;
+  const majorSource = sentences(jd).find(sentence => majorSemanticsPattern.test(sentence) && majorRequirementPattern.test(sentence)) || "JD 未发现对应原文";
   const hasMajor = majorSource !== "JD 未发现对应原文";
   if (hasMajor) {
     const type = classify(majorSource);
-    const related = /计算机|软件|人工智能|数据|电子信息/.test(input.major);
+    const requiredMajorMatchers = [
+      { source: /计算机/, user: /计算机/ },
+      { source: /软件/, user: /软件/ },
+      { source: /人工智能/, user: /人工智能/ },
+      { source: /数据/, user: /数据/ },
+      { source: /电子信息/, user: /电子信息/ },
+      { source: /设计/, user: /设计|建筑|规划/ },
+      { source: /商科/, user: /商科|经济|金融|管理|市场|会计/ },
+    ].filter(item => item.source.test(majorSource));
+    if (!majorFieldPattern.test(majorSource) && !/软件(?:、|，|,|\/|及|或|等).{0,12}相关专业|数据(?:、|，|,|\/|及|或|等).{0,12}相关专业/.test(majorSource)) {
+      add("专业限制", majorSource, type, input.major, "未明确", "JD 提到专业背景，但未明确限定具体专业范围。");
+      return { gateChecks, notes };
+    }
+    const related = requiredMajorMatchers.some(item => item.user.test(input.major));
     const status: GateStatus = type === "企业偏好" ? related ? "满足偏好" : "未满足偏好，但不构成硬门槛" : type === "普通加分项" ? related ? "已具备加分项" : "暂未具备加分项" : related ? "符合" : "不符合";
     const reason = type === "企业偏好" && !related ? "相关专业仅为优先条件，非相关专业不构成淘汰型硬门槛。" : `用户专业背景为${input.major}。`;
     add("专业限制", majorSource, type, input.major, status, reason);
-  } else add("专业限制", majorSource, "未明确", input.major, "未明确", "JD 未发现明确硬性专业限制。");
+  } else add("专业限制", majorSource, "未明确", input.major, "未明确", "JD 未发现明确专业要求。");
 
   return { gateChecks, notes };
 }

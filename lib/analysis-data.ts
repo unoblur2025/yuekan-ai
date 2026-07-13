@@ -22,6 +22,7 @@ export interface AnalysisRecord {
   plan: string[];
   companyResearch: { business: string; aiDirection: string };
   interviewQuestionIds: string[];
+  // AI 记录以 analysis 为唯一事实来源；顶层分析字段仅供旧页面和历史数据兼容。
   analysis?: JobAnalysisResult;
   analysisSource?: "ai" | "demo";
 }
@@ -93,16 +94,25 @@ export function completeAnalysis(profile: ProfileAnswers): AnalysisRecord { cons
 export function saveAIAnalysis(profile: ProfileAnswers, analysis: JobAnalysisResult): AnalysisRecord {
   const normalized = normalizeProfile(profile);
   const record = createRecord(normalized);
-  record.fitScore = analysis.fitScore;
-  record.matchGrade = analysis.matchGrade;
-  record.recommendation = analysis.recommendation;
-  record.priority = analysis.priority;
-  record.topRisk = analysis.topRisk;
-  record.report = { direction: analysis.roleDirection, summary: analysis.summary };
-  record.plan = analysis.preparationPlan72h.flatMap(day => day.tasks);
-  record.interviewQuestionIds = analysis.interviewQuestions.map((_, i) => `ai-q${i + 1}`);
-  record.analysis = analysis;
+  const authoritativeAnalysis = analysis;
+
+  // 唯一事实来源：新页面必须读取 record.analysis，不得基于顶层兼容字段重新做业务判断。
+  record.analysis = authoritativeAnalysis;
   record.analysisSource = "ai";
+
+  // 兼容快照：旧页面和历史记录仍依赖这些字段，所有值均直接来自同一次 analysis。
+  record.fitScore = authoritativeAnalysis.fitScore;
+  record.matchGrade = authoritativeAnalysis.matchGrade;
+  record.recommendation = authoritativeAnalysis.recommendation;
+  record.priority = authoritativeAnalysis.priority;
+  record.topRisk = authoritativeAnalysis.topRisk;
+  record.report = { direction: authoritativeAnalysis.roleDirection, summary: authoritativeAnalysis.summary };
+
+  // 旧功能入口所需的兼容投影，不作为分析结论来源。
+  record.plan = authoritativeAnalysis.preparationPlan72h.flatMap(day => day.tasks);
+  record.interviewQuestionIds = authoritativeAnalysis.interviewQuestions.map((_, i) => `ai-q${i + 1}`);
+
+  // current 与 history 序列化的是同一个 record，权威结果和兼容快照不会跨分析混用。
   setCurrent(record);
   const history = loadHistory();
   localStorage.setItem(STORAGE.history, JSON.stringify([record, ...history]));

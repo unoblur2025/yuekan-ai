@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ClipboardPaste, History, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ClipboardPaste, History, RotateCcw, Sparkles } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { levelNames, loadCurrent, loadProfile, loadProfileStep, ProfileAnswers, resetCurrentAnalysis, saveProfile, saveProfileStep, SkillLevel } from "@/lib/analysis-data";
 
@@ -15,6 +15,78 @@ const groups = {
   code:["完全没有代码基础","能看懂简单代码","能修改简单代码","能使用 AI Coding 制作 Demo","能独立完成开发项目"], internship:["暂无","1 段","2 段","3 段及以上"], projects:["暂无","1 个","2 个","3 个及以上"]
 };
 const skills=["Prompt Engineering","RAG","Dify","Coze","Agent","AI Workflow","Python","SQL","Excel","数据分析","PRD","用户调研","Figma","API"];
+const skillLevelDescriptions: Record<string, Record<SkillLevel, string>> = {
+  "Prompt Engineering": {
+    1: "能写出包含目标、背景和输出格式的单轮提示词。",
+    2: "能使用示例、约束和结构化输出，并根据结果迭代提示词。",
+    3: "能为多步骤任务设计可复用提示词，并定位常见输出偏差。",
+  },
+  RAG: {
+    1: "能搭建或操作简单知识库问答，并说明检索与生成的基本流程。",
+    2: "能配置切片、召回数量和引用来源，并检查回答是否命中原文。",
+    3: "能独立完成基础 RAG 流程，并排查召回不足、内容混杂和错误引用。",
+  },
+  Dify: {
+    1: "能创建基础应用、连接模型并运行简单提示词。",
+    2: "能配置知识库、变量和工作流节点，并完成基本调试。",
+    3: "能独立搭建包含多节点、工具调用和异常分支的可用应用。",
+  },
+  Coze: {
+    1: "能创建 Bot、配置角色提示词并完成基础对话测试。",
+    2: "能使用知识库、插件和工作流实现多步骤功能。",
+    3: "能独立搭建完整 Bot 流程，并调试变量传递、插件调用和异常结果。",
+  },
+  Agent: {
+    1: "能配置一个使用明确指令和单个工具完成任务的简单 Agent。",
+    2: "能让 Agent 组合多个工具，并处理上下文、变量和任务步骤。",
+    3: "能独立设计基础任务型 Agent，并排查工具失败、错误决策和重复执行。",
+  },
+  "AI Workflow": {
+    1: "能搭建输入、模型处理和结果输出组成的简单流程。",
+    2: "能使用变量、条件分支和结构化输出完成多步骤流程。",
+    3: "能独立搭建包含异常处理、重试和人工确认节点的可复用流程。",
+  },
+  Python: {
+    1: "能使用变量、条件、循环和函数，并读懂简单脚本。",
+    2: "能编写脚本处理文件、JSON 和 API 数据，并使用常见第三方库。",
+    3: "能独立完成结构清晰的小型程序，并定位异常和修复常见问题。",
+  },
+  SQL: {
+    1: "能使用 SELECT、WHERE 和 ORDER BY 完成基础查询。",
+    2: "能使用 GROUP BY、JOIN 和聚合函数完成常见分析。",
+    3: "能独立完成多表分析、复杂条件查询，并核验查询结果的正确性。",
+  },
+  Excel: {
+    1: "能使用基础公式、排序和筛选整理表格。",
+    2: "能使用查找函数、条件统计和数据透视表完成常见分析。",
+    3: "能独立清洗多表数据，并制作可复用的分析表和图表。",
+  },
+  数据分析: {
+    1: "能计算基础指标，并用表格或图表描述数据现象。",
+    2: "能清洗数据、拆分维度并解释主要变化和差异。",
+    3: "能独立完成问题定义、指标设计、分析验证和结论输出。",
+  },
+  PRD: {
+    1: "能读懂已有 PRD，并识别目标、需求和基本流程。",
+    2: "能独立整理需求并撰写包含背景、流程和功能说明的基础 PRD。",
+    3: "能完成需求拆解、验收标准、异常场景和迭代跟进。",
+  },
+  用户调研: {
+    1: "能准备基础访谈问题、记录反馈并整理主要观点。",
+    2: "能独立执行访谈或问卷，并归纳用户需求和痛点。",
+    3: "能设计小型调研方案、交叉验证发现并转化为产品需求。",
+  },
+  Figma: {
+    1: "能查看和修改现有设计稿，并制作简单页面或线框图。",
+    2: "能使用组件、自动布局和交互连线完成多页面原型。",
+    3: "能独立制作结构一致的交互原型，并整理组件和交付标注。",
+  },
+  API: {
+    1: "能读懂请求方法、参数和状态码，并使用工具调用简单接口。",
+    2: "能根据文档完成鉴权、参数传递和 JSON 响应处理。",
+    3: "能独立接入基础 REST API，并处理分页、异常返回和常见调试问题。",
+  },
+};
 
 function Options({name,values,multi=false,answers,setAnswers}:{name:string;values:string[];multi?:boolean;answers:ProfileAnswers;setAnswers:(a:ProfileAnswers)=>void}){
   const current=answers[name]; const pick=(v:string)=>{if(!multi)return setAnswers({...answers,[name]:v});const list=Array.isArray(current)?current as string[]:[];setAnswers({...answers,[name]:list.includes(v)?list.filter(x=>x!==v):[...list,v]})};
@@ -22,10 +94,21 @@ function Options({name,values,multi=false,answers,setAnswers}:{name:string;value
 }
 
 function SkillPicker({answers,setAnswers}:{answers:ProfileAnswers;setAnswers:(a:ProfileAnswers)=>void}){
-  const selected=Array.isArray(answers.skills)?answers.skills as string[]:[]; const levels=(answers.skillLevels||{}) as Record<string,SkillLevel>; const [editing,setEditing]=useState<string|null>(null);
-  const toggle=(skill:string)=>{if(!selected.includes(skill)){setAnswers({...answers,skills:[...selected,skill],skillLevels:{...levels,[skill]:1}})}else setEditing(editing===skill?null:skill)};
-  const level=(skill:string,value:SkillLevel)=>{setAnswers({...answers,skillLevels:{...levels,[skill]:value}});setEditing(null)};
-  return <div className="grid gap-3 sm:grid-cols-2">{skills.map(skill=>{const active=selected.includes(skill);return <div key={skill} className={`relative rounded-2xl border p-4 transition ${active?"border-[#6575e9] bg-[#f1f2ff]":"border-[#e1dfda] bg-white"}`}><button type="button" onClick={()=>toggle(skill)} className="flex w-full items-center justify-between text-left"><span className="font-bold">{skill}</span>{active?<span className="tag !py-1">{levelNames[levels[skill]||1]}</span>:<span className="text-xs text-[#92939a]">点击掌握</span>}</button>{active&&<button type="button" onClick={()=>setEditing(editing===skill?null:skill)} className="mt-3 flex items-center gap-1 text-xs font-bold text-[#5969dc]">设置熟练度 <ChevronDown size={14}/></button>}{editing===skill&&<div className="animate-in mt-3 grid gap-2 rounded-xl bg-white p-2 shadow-lg">{([1,2,3] as SkillLevel[]).map(n=><button type="button" key={n} onClick={()=>level(skill,n)} className="rounded-lg p-2 text-left text-sm hover:bg-[#f1f2ff]"><b>{n}级 · {levelNames[n]}</b><span className="ml-2 text-xs text-[#777985]">{n===1?"知道基本概念":n===2?"做过练习或 Demo":"真实项目中可独立完成"}</span></button>)}<button type="button" onClick={()=>{setAnswers({...answers,skills:selected.filter(x=>x!==skill)});setEditing(null)}} className="rounded-lg p-2 text-left text-xs text-[#b05454]">移除技能</button></div>}</div>})}</div>
+  const selected=Array.isArray(answers.skills)?answers.skills as string[]:[]; const levels=(answers.skillLevels||{}) as Record<string,SkillLevel>;
+  const select=(skill:string)=>setAnswers({...answers,skills:[...selected,skill],skillLevels:{...levels,[skill]:1}});
+  const level=(skill:string,value:SkillLevel)=>setAnswers({...answers,skillLevels:{...levels,[skill]:value}});
+  const remove=(skill:string)=>setAnswers({...answers,skills:selected.filter(x=>x!==skill)});
+  return <div>
+    <p className="mb-4 rounded-xl border border-[#dedff0] bg-[#f7f7ff] p-3 text-xs leading-6 text-[#65688b]">技能等级仅用于用户自评与岗位匹配参考，不代表系统已对实际能力进行认证。</p>
+    <div className="grid gap-3 sm:grid-cols-2">{skills.map(skill=>{const active=selected.includes(skill);const currentLevel=levels[skill]||1;const descriptions=skillLevelDescriptions[skill];return <div key={skill} className={`relative rounded-2xl border p-4 transition ${active?"border-[#6575e9] bg-[#f1f2ff]":"border-[#e1dfda] bg-white"}`}>
+      {active?<div className="flex w-full items-center justify-between gap-3"><span className="font-bold">{skill}</span><span className="tag !py-1">{levelNames[currentLevel]}</span></div>:<button type="button" onClick={()=>select(skill)} className="flex w-full items-center justify-between text-left"><span className="font-bold">{skill}</span><span className="text-xs text-[#92939a]">点击掌握</span></button>}
+      {active&&<div className="animate-in mt-4 rounded-xl border border-[#dfe1f5] bg-white p-3">
+        <p className="mb-2 text-xs font-extrabold text-[#5969dc]">等级参考</p>
+        <div className="grid gap-2">{([1,2,3] as SkillLevel[]).map(n=>{const current=n===currentLevel;return <button type="button" key={n} onClick={()=>level(skill,n)} aria-pressed={current} className={`rounded-lg border p-3 text-left transition ${current?"border-[#6575e9] bg-[#f1f2ff] shadow-sm":"border-[#ececf2] bg-white hover:border-[#cfd3f3] hover:bg-[#fafaff]"}`}><span className={`block text-sm font-extrabold ${current?"text-[#5363cf]":"text-[#555762]"}`}>{n}级｜{levelNames[n]}</span><span className="mt-1 block text-xs leading-5 text-[#777985]">{descriptions[n]}</span></button>})}</div>
+        <button type="button" onClick={()=>remove(skill)} className="mt-3 rounded-lg px-2 py-1 text-left text-xs text-[#b05454] hover:bg-[#fff2f2]">移除技能</button>
+      </div>}
+    </div>})}</div>
+  </div>
 }
 
 export default function ProfilePage(){

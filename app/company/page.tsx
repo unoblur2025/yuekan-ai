@@ -1,18 +1,163 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BriefcaseBusiness, Building2, CalendarDays, CircleCheck, ExternalLink, Factory, History, MapPin, MessageSquareText, RotateCcw, ShieldCheck, Users } from "lucide-react";
+import { ArrowLeft, ExternalLink, History, MessageSquareText, RotateCcw, Search, ShieldCheck } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import { SectionCard } from "@/components/ReportUI";
-import { AnalysisRecord, demoRecord, loadCurrent, resetCurrentAnalysis } from "@/lib/analysis-data";
+import { AnalysisRecord, loadCurrent, resetCurrentAnalysis } from "@/lib/analysis-data";
+import type { CompanyResearchResult, CompanyResearchSource } from "@/lib/company-research";
 
-const facts=[[Users,"企业规模","500–999 人"],[CalendarDays,"成立时间","2018 年"],[Factory,"所属行业","企业软件 / 智能制造"],[Building2,"发展阶段","C 轮融资"],[BriefcaseBusiness,"办公地址","创意产业园"]];
-export default function CompanyPage(){const [record,setRecord]=useState<AnalysisRecord|null>(null);useEffect(()=>setRecord(loadCurrent()||demoRecord),[]);if(!record)return <PageShell><div className="container py-24 muted">正在读取当前记录…</div></PageShell>;
-return <PageShell><section className="container py-12 sm:py-16"><div className="mb-8"><span className="tag"><ShieldCheck size={14}/> 当前为产品原型示例</span><h1 className="title mt-5">{record.companyName}</h1><p className="muted mt-2">目标岗位：{record.jobTitle} · {record.city}</p><div className="mt-4 rounded-2xl border border-[#dedff0] bg-[#f3f4ff] p-4 text-sm text-[#5c6091]">分析内容基于用户输入和模拟公开资料，不代表真实联网搜索结果。</div><div className="mt-5 flex flex-wrap gap-3"><Link href="/report" className="btn-secondary"><ArrowLeft size={16}/>返回岗位分析</Link><Link href="/interview" className="btn-primary"><MessageSquareText size={16}/>进入面试准备</Link><Link href="/history" className="btn-secondary"><History size={16}/>历史记录</Link><Link href="/profile" onClick={()=>resetCurrentAnalysis()} className="btn-secondary"><RotateCcw size={16}/>新的测试</Link></div></div>
-<div className="grid gap-5 lg:grid-cols-3"><SectionCard title="企业基本信息" className="lg:col-span-2"><div className="grid gap-3 sm:grid-cols-2">{[...facts,[MapPin,"所在城市",record.city]].map(([Icon,l,v])=>{const I=Icon as typeof Users;return <div className="soft-card flex gap-3 p-4" key={String(l)}><I size={19} className="text-[#5969dc]"/><div><p className="text-xs text-[#888a93]">{String(l)}</p><b className="mt-1 block">{String(v)}</b></div></div>})}</div></SectionCard><SectionCard title="一句话看懂"><p className="leading-7 text-[#60626c]">该企业的模拟业务画像是：{record.companyResearch.business}，并把知识库与 AI 助手嵌入业务流程。</p><div className="mt-5 flex flex-wrap gap-2"><span className="tag">B2B</span><span className="tag">企业服务</span><span className="tag">企业 AI</span></div></SectionCard>
-<SectionCard title="业务与产品" className="lg:col-span-3"><div className="grid gap-6 md:grid-cols-3"><Info title="主要业务" text={record.companyResearch.business}/><Info title="AI 方向" text={record.companyResearch.aiDirection}/><Info title="目标客户" text="中大型企业的业务、运营和信息化团队"/></div></SectionCard>
-<SectionCard title="目标岗位可能参与的业务" className="lg:col-span-2"><div className="space-y-4"><Info title="近期业务方向" text="围绕业务文档、服务记录与行业知识构建企业知识库，降低信息获取成本。"/><Info title="岗位参与方式" text={`作为${record.jobTitle}，可能参与需求梳理、知识库产品流程、模型回答测试与 Badcase 优化。`}/></div></SectionCard><SectionCard title="岗位与业务关系"><div className="relative space-y-2 before:absolute before:bottom-3 before:left-[11px] before:top-3 before:w-px before:bg-[#d9dcef]">{["理解企业业务场景","整理知识与需求","设计 AI 产品方案","验证回答效果"].map((x,i)=><div className="relative flex items-center gap-3 text-sm font-semibold" key={x}><span className="z-10 grid size-6 place-items-center rounded-full bg-[#e9ebff] text-[10px] text-[#5363cf]">{i+1}</span>{x}</div>)}</div></SectionCard>
-<SectionCard title="典型候选人能力画像" className="lg:col-span-3"><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">{[["常见学历","本科及以上"],["高频专业","理工、经管、设计"],["高频技能","PRD、RAG、数据分析"],["常见项目","知识库 / AI 应用"],["业务能力","需求拆解与沟通"]].map(([l,v])=><div className="soft-card p-4" key={l}><p className="text-xs text-[#888a93]">{l}</p><p className="mt-2 font-bold leading-6">{v}</p></div>)}</div><p className="muted mt-5 text-xs">不分析员工性别、年龄或任何与岗位能力无关的私人特征。</p></SectionCard>
-<SectionCard title="面试前应该了解的业务问题" className="lg:col-span-3"><div className="grid gap-3 md:grid-cols-3">{["企业为什么需要知识库？","业务人员在什么场景使用 AI 助手？","回答正确率与响应速度如何取舍？"].map(x=><div className="flex gap-3 rounded-2xl border border-[#e7e4de] bg-white p-4" key={x}><CircleCheck size={19} className="shrink-0 text-[#5969dc]"/><span className="font-semibold leading-6">{x}</span></div>)}</div><div className="mt-5 flex items-center gap-2 text-xs text-[#8a8b93]"><ExternalLink size={13}/>信息来源为模拟公开资料，仅作产品功能演示</div></SectionCard></div></section></PageShell>}
-function Info({title,text}:{title:string;text:string}){return <div><p className="text-sm font-extrabold">{title}</p><p className="muted mt-2 text-sm leading-7">{text}</p></div>}
+const EMPTY_SUMMARY = "已找到相关公开来源，但暂无可直接确认的企业信息摘要，请查看下方来源并自行核验。";
+
+function isSearchableCompanyName(value: string) {
+  const name = value.trim();
+  return Boolean(name) && name !== "未填写企业";
+}
+
+function isSafeSourceUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function formatRetrievedAt(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("zh-CN");
+}
+
+export default function CompanyPage() {
+  const [record, setRecord] = useState<AnalysisRecord | null>();
+  const [research, setResearch] = useState<CompanyResearchResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const requestController = useRef<AbortController | null>(null);
+
+  const runResearch = useCallback(async (current: AnalysisRecord) => {
+    if (!isSearchableCompanyName(current.companyName)) return;
+    requestController.current?.abort();
+    const controller = new AbortController();
+    requestController.current = controller;
+    setLoading(true);
+    setResearch(null);
+    try {
+      const response = await fetch("/api/company-research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyName: current.companyName, city: current.city || "" }),
+        signal: controller.signal,
+      });
+      const result = await response.json() as CompanyResearchResult;
+      if (!result || !["found", "ambiguous", "not_found", "error"].includes(result.status)) throw new Error("企业搜索接口返回格式不正确。");
+      setResearch(result);
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
+      setResearch({
+        status: "error",
+        queryCompanyName: current.companyName,
+        queryCity: current.city || "",
+        summary: "",
+        sources: [],
+        errorMessage: error instanceof Error ? error.message : "企业公开信息检索失败。",
+      });
+    } finally {
+      if (requestController.current === controller) {
+        requestController.current = null;
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => setRecord(loadCurrent()), []);
+  useEffect(() => {
+    if (!record || !isSearchableCompanyName(record.companyName)) return;
+    void runResearch(record);
+    return () => requestController.current?.abort();
+  }, [record, runResearch]);
+
+  if (record === undefined) return <PageShell><div className="container py-24 muted">正在读取当前记录…</div></PageShell>;
+
+  const hasCompanyName = Boolean(record && isSearchableCompanyName(record.companyName));
+  return <PageShell><section className="container py-12 sm:py-16">
+    <div className="mb-8">
+      <span className="tag"><ShieldCheck size={14}/> 企业公开信息检索</span>
+      <h1 className="title mt-5">{hasCompanyName ? record?.companyName : "企业研究"}</h1>
+      {record&&<p className="muted mt-2">目标岗位：{record.jobTitle}{record.city?` · ${record.city}`:""}</p>}
+      <div className="mt-4 rounded-2xl border border-[#dedff0] bg-[#f3f4ff] p-4 text-sm leading-6 text-[#5c6091]">
+        企业信息来自公开网页检索，请结合来源自行核验。搜索结果不等于已确认企业主体，同名企业可能导致来源混杂；请结合招聘平台中的公司全称、岗位城市和官网确认。
+      </div>
+      <div className="mt-5 flex flex-wrap gap-3">
+        <Link href="/report" className="btn-secondary"><ArrowLeft size={16}/>返回岗位分析</Link>
+        <Link href="/interview" className="btn-primary"><MessageSquareText size={16}/>进入面试准备</Link>
+        <Link href="/history" className="btn-secondary"><History size={16}/>历史记录</Link>
+        <Link href="/profile" onClick={() => resetCurrentAnalysis()} className="btn-secondary"><RotateCcw size={16}/>新的测试</Link>
+      </div>
+    </div>
+
+    {!hasCompanyName&&<SectionCard title="暂无企业信息"><p className="muted">暂无可检索的企业名称，请先完成岗位识别。</p></SectionCard>}
+    {hasCompanyName&&loading&&<SectionCard title="企业公开信息检索"><div className="flex items-center gap-3 text-[#5969dc]"><Search className="animate-pulse"/><b>正在检索企业公开信息，请稍候……</b></div></SectionCard>}
+    {hasCompanyName&&!loading&&research?.status==="found"&&<FoundResult result={research}/>}
+    {hasCompanyName&&!loading&&research?.status==="ambiguous"&&<AmbiguousResult result={research}/>}
+    {hasCompanyName&&!loading&&research?.status==="not_found"&&<SectionCard title="企业公开信息检索结果"><p className="font-bold">暂未找到可靠的企业公开信息。</p><p className="muted mt-3 leading-7">当前无法确认企业主体，请勿根据公司简称推断企业规模、业务、融资或办公地址。</p></SectionCard>}
+    {hasCompanyName&&!loading&&research?.status==="error"&&<SectionCard title="企业公开信息检索结果"><p className="font-bold">企业公开信息检索失败，请稍后重试。</p>{research.errorMessage&&<p className="muted mt-3 text-sm">{research.errorMessage}</p>}<button type="button" onClick={() => record&&void runResearch(record)} className="btn-primary mt-5"><RotateCcw size={16}/>重新检索</button></SectionCard>}
+  </section></PageShell>;
+}
+
+function FoundResult({ result }: { result: CompanyResearchResult }) {
+  return <div className="grid gap-5">
+    <SectionCard title="企业公开信息检索结果">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Info title="查询企业" text={result.queryCompanyName || "暂无可靠公开信息"}/>
+        <Info title="辅助检索城市" text={result.queryCity || "未提供"}/>
+      </div>
+      <p className="muted mt-4 text-xs leading-6">岗位城市仅用于辅助检索，不代表企业注册地址或实际办公地址。</p>
+    </SectionCard>
+    <SectionCard title="企业公开信息摘要">
+      <p className="leading-8 text-[#60626c]">{result.summary || EMPTY_SUMMARY}</p>
+      <p className="muted mt-4 text-xs leading-6">当前版本尚未完成同名企业主体自动确认，缺失信息不会由模型补全。</p>
+    </SectionCard>
+    <SectionCard title="信息来源">
+      {result.sources.length?<div className="space-y-4">{result.sources.map(source=><SourceCard key={source.id} source={source}/>)}</div>:<p className="muted">暂无可展示的公开来源。</p>}
+    </SectionCard>
+  </div>;
+}
+
+function AmbiguousResult({ result }: { result: CompanyResearchResult }) {
+  const detectedCompanyNames = (result.detectedCompanyNames || []).filter(name => name.trim());
+  return <div className="grid gap-5">
+    <SectionCard title="企业主体待核验">
+      <p className="leading-8 text-[#60626c]">已检索到多个可能相关的企业主体，目前无法确认该岗位对应的具体公司。以下内容仅作为公开信息线索，请结合招聘页面中的公司全称、官网及所在城市进一步核验。</p>
+      {detectedCompanyNames.length>0&&<div className="mt-5 rounded-2xl border border-[#dedff0] bg-[#f7f7ff] p-5">
+        <h3 className="font-extrabold">检索到的候选企业主体</h3>
+        <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-7 text-[#60626c]">
+          {detectedCompanyNames.map(name=><li key={name}>{name}</li>)}
+        </ul>
+      </div>}
+      <p className="mt-5 text-sm font-bold leading-7 text-[#8a5a2b]">当前搜索结果不可直接作为已确认的企业事实，也不应直接用于生成企业针对性面试题。</p>
+    </SectionCard>
+    <SectionCard title="公开信息来源（待核验）">
+      {result.sources.length?<div className="space-y-4">{result.sources.map(source=><SourceCard key={source.id} source={source}/>)}</div>:<p className="muted">暂无可展示的公开来源。</p>}
+    </SectionCard>
+  </div>;
+}
+
+function SourceCard({ source }: { source: CompanyResearchSource }) {
+  const safeUrl = isSafeSourceUrl(source.url);
+  return <article className="rounded-2xl border border-[#e5e3de] bg-white p-5">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        {safeUrl?<a href={source.url} target="_blank" rel="noopener noreferrer" className="font-extrabold text-[#4f5fc4] hover:underline">{source.title}<ExternalLink className="ml-1 inline" size={14}/></a>:<h3 className="font-extrabold">{source.title}</h3>}
+        <p className="muted mt-1 text-xs">发布方：{source.publisher || "未知发布方"}</p>
+      </div>
+      <span className="tag">相关性 {Number.isFinite(source.score)?source.score.toFixed(3):"暂无"}</span>
+    </div>
+    <p className="muted mt-4 text-sm leading-7">{source.snippet || "该来源未返回可展示摘要，请打开来源页面核验。"}</p>
+    <p className="mt-3 text-xs text-[#8a8b93]">查询时间：{formatRetrievedAt(source.retrievedAt)}</p>
+  </article>;
+}
+
+function Info({ title, text }: { title: string; text: string }) {
+  return <div className="soft-card p-4"><p className="text-xs text-[#888a93]">{title}</p><b className="mt-2 block leading-6">{text}</b></div>;
+}
